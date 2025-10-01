@@ -3,8 +3,9 @@ getwd()
 setwd("/mnt/data/home/sarahsczelecki/qPCR-OSM")
 library(tidyverse)
 library(ggplot2)
+library(tidyr)
 
-data <- read.csv("/mnt/data/home/sarahsczelecki/input-files/Muc16-set-combined-for-R.csv")
+data <- read.csv("/mnt/data/home/sarahsczelecki/input-files/Bax-set-combined-for-R.csv")
 
 head(data)
 str(data)
@@ -144,3 +145,24 @@ for (gene in genes) {
          plot = p, width = 6, height = 8, dpi = 800)
 }
 
+#bax/bcl2 ratio
+ratio <- qpcr_ddCt_norm %>%
+  select(Sample, Condition, Target, RelExp_ctrl) %>%
+  pivot_wider(names_from = Target, values_from = RelExp_ctrl)
+
+ratio <- ratio %>%
+  mutate(Ratio_Bax_Bcl2 = Bax / Bcl2)
+
+ratio_plot <- ggplot(ratio, aes(x = Condition, y = Ratio_Bax_Bcl2, fill = Condition)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.15, size = 2, color = "black") +
+  theme_bw(base_size = 25) +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(), 
+        axis.title.x = element_text(""), 
+        legend.position = "none") +
+  labs(y = "Bax:Bcl2 Ratio", x = "Sample Group", title = "Ratio")
+
+print(ratio_plot)
+
+ggsave(filename = "bax-bcl2-ratio-xleg.png", plot = ratio_plot, width = 6, height = 8, dpi = 800)

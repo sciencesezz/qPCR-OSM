@@ -111,71 +111,37 @@ ggplot() +
   labs(y = "Relative Expression to Rpl19", x = "Sample Group")
 
 #box and whisker
-
 qpcr_ddCt_norm <- qpcr_ddCt_norm %>%
   filter(Condition != "Calibrator") %>%
   filter(Condition != "OSF1") %>%
   filter(Condition != "OSF2")
 
-cdh1 <- qpcr_ddCt_norm %>%
-  filter(Target == "Cdh1")
+# Get all unique genes
+genes <- unique(qpcr_ddCt_norm$Target)
 
-dab2 <- qpcr_ddCt_norm %>%
-  filter(Target == "Dab2")
+# Loop through each gene and save a plot
+for (gene in genes) {
+  
+  # Filter for this gene
+  df_gene <- qpcr_ddCt_norm %>% filter(Target == gene)
+  
+  # Create plot
+  p <- ggplot(df_gene, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
+    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+    geom_jitter(width = 0.15, size = 2, color = "black") +
+    #geom_hline(yintercept = 1, linetype = "dashed") +
+    theme_bw(base_size = 25) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = "none") +
+    labs(y = "Relative Expression to Rpl19", x = "Sample Group",
+         title = gene, )
+  
+  # Print (optional)
+  print(p)
+  
+  # Save plot as PNG
+  ggsave(filename = paste0("genes-", gene, ".png"),
+         plot = p, width = 6, height = 8, dpi = 800)
+}
 
-foxl2 <- qpcr_ddCt_norm %>%
-  filter(Target == "Foxl2")
-
-#all
-p <- ggplot(qpcr_ddCt_norm, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +   # box and whiskers, hide default outliers
-  geom_jitter(width = 0.15, size = 2, color = "black") +  # show individual points
-  geom_hline(yintercept = 1, linetype = "dashed") +       # baseline = 1
-  facet_wrap(~ Target, scales = "free_y") +               # one panel per gene
-  theme_bw(base_size = 25) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "right") +
-  labs(y = "Relative Expression to Rpl19", x = "Sample Group")
-print(p)
-ggsave("genes-cdh1-set1.png", plot = p, width = 10, height = 6, dpi = 800)
-
-#each gene
-p1 <- ggplot(cdh1, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +   # box and whiskers, hide default outliers
-  geom_jitter(width = 0.15, size = 2, color = "black") +  # show individual points
-  #geom_hline(yintercept = 1, linetype = "dashed") +       # baseline = 1
-  facet_wrap(~ Target, scales = "free_y") +               # one panel per gene
-  theme_bw(base_size = 25) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "none") +
-  labs(y = "Relative Expression to Rpl19", x = "Sample Group")
-print(p1)
-ggsave("cdh1.png", plot = p1, width = 8, height = 8, dpi = 800)
-
-p2 <- ggplot(dab2, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +   # box and whiskers, hide default outliers
-  geom_jitter(width = 0.15, size = 2, color = "black") +  # show individual points
-  #geom_hline(yintercept = 1, linetype = "dashed") +       # baseline = 1
-  facet_wrap(~ Target, scales = "free_y") +               # one panel per gene
-  theme_bw(base_size = 25) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "none") +
-  labs(y = "Relative Expression to Rpl19", x = "Sample Group")
-print(p2)
-ggsave("dab2.png", plot = p2, width = 8, height = 8, dpi = 800)
-
-p3 <- ggplot(foxl2, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +   # box and whiskers, hide default outliers
-  geom_jitter(width = 0.15, size = 2, color = "black") +  # show individual points
-  #geom_hline(yintercept = 1, linetype = "dashed") +       # baseline = 1
-  facet_wrap(~ Target, scales = "free_y") +               # one panel per gene
-  theme_bw(base_size = 25) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "none") +
-  labs(y = "Relative Expression to Rpl19", x = "Sample Group")
-print(p3)
-ggsave("foxl2.png", plot = p3, width = 8, height = 8, dpi = 800)

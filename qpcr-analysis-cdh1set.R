@@ -156,3 +156,4 @@ for (gene in genes) {
          plot = p, width = 6, height = 8, dpi = 800)
 }
 
+write.csv(qpcr_ddCt_norm, "cdh1-set-norm.csv", row.names = FALSE)

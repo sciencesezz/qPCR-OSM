@@ -154,3 +154,49 @@ for (gene in genes) {
          plot = p, width = 6, height = 8, dpi = 800)
 }
 
+
+#statistical analysis
+#Check normality assumptions
+#histogram - I think not as good for relatively small n
+ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
+  geom_histogram(color = "black", bins = 10, alpha = 0.6) +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+#q-q
+ggplot(qpcr_ddCt_norm, aes(sample = RelExp_ctrl)) +
+  stat_qq() + stat_qq_line() +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+#Shapiro Wilk Test for normality
+by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
+#shapiro.test(ratio$Ratio_Bax_Bcl2)
+
+#Check homogeneity of variances(homoscedacity)
+#groups should have roughly equal variances
+
+#first filter per gene
+library(car)
+bmpr2 <- as.data.frame(subset(qpcr_ddCt_norm, Target == "Bmpr2"))
+muc16 <-as.data.frame(subset(qpcr_ddCt_norm, Target == "Muc16"))
+
+leveneTest(RelExp_ctrl ~ Condition,  data = bmpr2)
+leveneTest(RelExp_ctrl ~ Condition, data = muc16)
+
+#Anova
+anova_result <- aov(RelExp_ctrl ~ Condition, data = bmpr2)
+summary(anova_result)
+TukeyHSD(anova_result)
+
+#Anova
+anova_result <- aov(RelExp_ctrl ~ Condition, data = muc16)
+summary(anova_result)
+TukeyHSD(anova_result)
+
+#nonparametric 
+kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+
+
+
+

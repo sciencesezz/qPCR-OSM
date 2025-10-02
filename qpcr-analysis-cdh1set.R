@@ -92,10 +92,16 @@ qpcr_summary <- qpcr_ddCt_norm %>%
     .groups = "drop"
   )
 
+colours <- c(
+  "Control" = "#A09E9F", 
+  "DNOSM"   = "#1E88E5",  
+  "COCSM"   = "#FFC107",  
+  "CO-CUL"  = "#004D40") 
+
 # Plot
 ggplot() +
   # Mean bars
-  geom_col(data = qpcr_summary, aes(x = Condition, y = mean_RelExp, fill = Condition), alpha = 0.6) +
+  geom_col(data = qpcr_summary, aes(x = Condition, y = mean_RelExp, fill = Condition), alpha = 1) +
   # SEM error bars
   geom_errorbar(data = qpcr_summary, 
                 aes(x = Condition, ymin = mean_RelExp - sem_RelExp, ymax = mean_RelExp + sem_RelExp),
@@ -106,6 +112,7 @@ ggplot() +
               width = 0.15, size = 1, color = "black") +
   geom_hline(yintercept = 1, linetype = "dashed") +  # baseline = 1
   facet_wrap(~ Target, scales = "free_y") +          # one panel per gene
+  scale_fill_manual(values = colours) +
   theme_light(base_size = 20) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
@@ -116,6 +123,8 @@ qpcr_ddCt_norm <- qpcr_ddCt_norm %>%
   filter(Condition != "Calibrator") %>%
   filter(Condition != "OSF1") %>%
   filter(Condition != "OSF2")
+
+ 
 
 # Get all unique genes
 genes <- unique(qpcr_ddCt_norm$Target)
@@ -128,13 +137,14 @@ for (gene in genes) {
   
   # Create plot
   p <- ggplot(df_gene, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+    geom_boxplot(alpha = 1, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2, color = "black") +
     #geom_hline(yintercept = 1, linetype = "dashed") +
+    scale_fill_manual(values = colours) +
     theme_bw(base_size = 25) +
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
-          legend.position = "none") +
+          legend.position = "right") +
     labs(y = "Relative Expression to Rpl19", x = "Sample Group",
          title = gene, )
   

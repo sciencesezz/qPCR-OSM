@@ -176,3 +176,54 @@ ratio_plot <- ggplot(ratio, aes(x = Condition, y = Ratio_Bax_Bcl2, fill = Condit
 print(ratio_plot)
 
 ggsave(filename = "bax-bcl2-ratio-xleg.png", plot = ratio_plot, width = 6, height = 8, dpi = 800)
+
+write.csv(qpcr_ddCt_norm, "bax-set-norm.csv", row.names = FALSE)
+
+#statistical analysis
+#Check normality assumptions
+#histogram - I think not as good for relatively small n
+ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
+  geom_histogram(color = "black", bins = 10, alpha = 0.6) +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+#q-q
+ggplot(qpcr_ddCt_norm, aes(sample = RelExp_ctrl)) +
+  stat_qq() + stat_qq_line() +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+ggplot(ratio, aes(sample = Ratio_Bax_Bcl2)) +
+  stat_qq() + stat_qq_line() +
+  #facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+#Shapiro Wilk Test for normality
+by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
+shapiro.test(ratio$Ratio_Bax_Bcl2)
+
+#Check homogeneity of variances(homoscedacity)
+#groups should have roughly equal variances
+
+#first filter per gene
+library(car)
+bax <- as.data.frame(subset(qpcr_ddCt_norm, Target == "Bax"))
+bcl2 <-as.data.frame(subset(qpcr_ddCt_norm, Target == "Bcl2"))
+
+leveneTest(RelExp_ctrl ~ Condition,  data = bax)
+leveneTest(RelExp_ctrl ~ Condition, data = bcl2)
+leveneTest(Ratio_Bax_Bcl2 ~ Condition, data = ratio)
+
+#Anova
+anova_result <- aov(RelExp_ctrl ~ Condition, data = bcl2)
+summary(anova_result)
+TukeyHSD(anova_result)
+
+anova_result <- aov(Ratio_Bax_Bcl2 ~ Condition, data = ratio)
+summary(anova_result)
+TukeyHSD(anova_result)
+
+#nonparametric 
+kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+
+

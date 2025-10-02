@@ -157,3 +157,64 @@ for (gene in genes) {
 }
 
 write.csv(qpcr_ddCt_norm, "cdh1-set-norm.csv", row.names = FALSE)
+
+#statistical analysis
+library(car)
+#Check normality assumptions
+#histogram - I think not as good for relatively small n
+ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
+  geom_histogram(color = "black", bins = 10, alpha = 0.6) +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+#q-q
+ggplot(qpcr_ddCt_norm, aes(sample = RelExp_ctrl)) +
+  stat_qq() + stat_qq_line() +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+# Output file path
+output_file <- "cdh1-set-stats.txt"
+
+# Start redirecting output
+sink(output_file)
+
+#Shapiro Wilk Test for normality
+by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
+#shapiro.test(ratio$Ratio_Bax_Bcl2)
+
+#loop for levene's and anova
+#Check homogeneity of variances(homoscedacity)
+#groups should have roughly equal variances
+
+genes <- c("Cdh1", "Dab2", "Foxl2")
+
+for (gene in genes) {
+  
+  cat("\n===== Gene:", gene, "=====\n")
+  
+  # Subset the gene
+  gene_data <- subset(qpcr_ddCt_norm, Target == gene)
+  
+  # Levene's test
+  print("Levene's Test:")
+  print(leveneTest(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # ANOVA
+  anova_result <- aov(RelExp_ctrl ~ Condition, data = gene_data)
+  print("ANOVA Summary:")
+  print(summary(anova_result))
+  
+  # Tukey post-hoc
+  print("Tukey HSD:")
+  print(TukeyHSD(anova_result))
+}
+# Stop redirecting output
+sink()
+
+
+#nonparametric 
+#kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+
+
+

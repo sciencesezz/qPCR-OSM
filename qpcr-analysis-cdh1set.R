@@ -208,7 +208,20 @@ for (gene in genes) {
   # Tukey post-hoc
   print("Tukey HSD:")
   print(TukeyHSD(anova_result))
+  #nonparametric 
+  print("Kruskal Wallis:")
+  print(kruskal.test(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # Post-hoc pairwise Wilcoxon (Holm correction)
+  cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
+  print(pairwise.wilcox.test(
+    gene_data$RelExp_ctrl, 
+    gene_data$Condition, 
+    p.adjust.method = "holm"
+  ))
+  
 }
+
 # Stop redirecting output
 sink()
 

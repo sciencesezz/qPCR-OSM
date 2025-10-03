@@ -5,7 +5,7 @@ library(tidyverse)
 library(ggplot2)
 library(tidyr)
 
-data <- read.csv("/mnt/data/home/sarahsczelecki/input-files/Bax-set-combined-for-R.csv")
+data <- read.csv("/mnt/data/home/sarahsczelecki/input-files/cell-cycle-genes-combined-for-R.csv")
 
 head(data)
 str(data)
@@ -15,7 +15,7 @@ qpcr <- data %>%
   mutate(Sample = ifelse(Sample %in% c("Cal1", "Cal2"), "Cal", Sample))
 
 # Define your endogenous control and calibrator
-endogenous <- "Rpl19"   # replace with your reference gene
+endogenous <- "Rpl19-1"   # replace with your reference gene
 calibrator <- "Cal"       # replace with your baseline sample
 
 
@@ -90,6 +90,11 @@ qpcr_summary <- qpcr_ddCt_norm %>%
     sem_RelExp  = sd(RelExp_ctrl, na.rm = TRUE)/sqrt(n()),
     .groups = "drop"
   )
+colours <- c(
+  "Control" = "#A09E9F", 
+  "DNOSM"   = "#1E88E5",  
+  "COCSM"   = "#FFC107",  
+  "CO-CUL"  = "#004D40") 
 
 #box and whisker
 qpcr_ddCt_norm <- qpcr_ddCt_norm %>%
@@ -100,7 +105,7 @@ qpcr_ddCt_norm <- qpcr_ddCt_norm %>%
 # Plot
 ggplot() +
   # Mean bars
-  geom_col(data = qpcr_summary, aes(x = Condition, y = mean_RelExp, fill = Condition), alpha = 0.6) +
+  geom_col(data = qpcr_summary, aes(x = Condition, y = mean_RelExp, fill = Condition), alpha = 1) +
   # SEM error bars
   geom_errorbar(data = qpcr_summary, 
                 aes(x = Condition, ymin = mean_RelExp - sem_RelExp, ymax = mean_RelExp + sem_RelExp),
@@ -111,6 +116,7 @@ ggplot() +
               width = 0.15, size = 1, color = "black") +
   geom_hline(yintercept = 1, linetype = "dashed") +  # baseline = 1
   facet_wrap(~ Target, scales = "free_y") +          # one panel per gene
+  scale_fill_manual(values = colours) +
   theme_light(base_size = 20) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
@@ -127,9 +133,10 @@ for (gene in genes) {
   
   # Create plot
   p <- ggplot(df_gene, aes(x = Condition, y = RelExp_ctrl, fill = Condition)) +
-    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+    geom_boxplot(alpha = 1, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2, color = "black") +
     #geom_hline(yintercept = 1, linetype = "dashed") +
+    scale_fill_manual(values = colours) +
     theme_bw(base_size = 25) +
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
@@ -145,24 +152,75 @@ for (gene in genes) {
          plot = p, width = 6, height = 8, dpi = 800)
 }
 
-#bax/bcl2 ratio
-ratio <- qpcr_ddCt_norm %>%
-  select(Sample, Condition, Target, RelExp_ctrl) %>%
-  pivot_wider(names_from = Target, values_from = RelExp_ctrl)
+#statistical analysis
+library(car)
+#Check normality assumptions
+#histogram - I think not as good for relatively small n
+ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
+  geom_histogram(color = "black", bins = 10, alpha = 0.6) +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
 
-ratio <- ratio %>%
-  mutate(Ratio_Bax_Bcl2 = Bax / Bcl2)
+#q-q
+ggplot(qpcr_ddCt_norm, aes(sample = RelExp_ctrl)) +
+  stat_qq() + stat_qq_line() +
+  facet_wrap(~Target, scales = "free") +
+  theme_minimal()
 
-ratio_plot <- ggplot(ratio, aes(x = Condition, y = Ratio_Bax_Bcl2, fill = Condition)) +
-  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
-  geom_jitter(width = 0.15, size = 2, color = "black") +
-  theme_bw(base_size = 25) +
-  theme(axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(), 
-        axis.title.x = element_text(""), 
-        legend.position = "none") +
-  labs(y = "Bax:Bcl2 Ratio", x = "Sample Group", title = "Ratio")
+# Output file path
+output_file <- "cellcycle-stats.txt"
 
-print(ratio_plot)
+# Start redirecting output
+sink(output_file)
 
-ggsave(filename = "bax-bcl2-ratio-xleg.png", plot = ratio_plot, width = 6, height = 8, dpi = 800)
+#Shapiro Wilk Test for normality
+by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
+#shapiro.test(ratio$Ratio_Bax_Bcl2)
+
+#loop for levene's and anova
+#Check homogeneity of variances(homoscedacity)
+#groups should have roughly equal variances
+
+genes <- c("Cdk2", "CyclinA2", "CyclinD1", "CyclinE1", "p21", "p27")
+
+for (gene in genes) {
+  
+  cat("\n===== Gene:", gene, "=====\n")
+  
+  # Subset the gene
+  gene_data <- subset(qpcr_ddCt_norm, Target == gene)
+  
+  # Levene's test
+  print("Levene's Test:")
+  print(leveneTest(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # ANOVA
+  anova_result <- aov(RelExp_ctrl ~ Condition, data = gene_data)
+  print("ANOVA Summary:")
+  print(summary(anova_result))
+  
+  # Tukey post-hoc
+  print("Tukey HSD:")
+  print(TukeyHSD(anova_result))
+  #nonparametric 
+  print("Kruskal Wallis:")
+  print(kruskal.test(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # Post-hoc pairwise Wilcoxon (Holm correction)
+  cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
+  print(pairwise.wilcox.test(
+    gene_data$RelExp_ctrl, 
+    gene_data$Condition, 
+    p.adjust.method = "holm"
+  ))
+  
+}
+
+# Stop redirecting output
+sink()
+
+#nonparametric 
+#kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+
+
+

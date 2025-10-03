@@ -158,6 +158,8 @@ for (gene in genes) {
 #statistical analysis
 #Check normality assumptions
 #histogram - I think not as good for relatively small n
+library(car)
+
 ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
   geom_histogram(color = "black", bins = 10, alpha = 0.6) +
   facet_wrap(~Target, scales = "free") +

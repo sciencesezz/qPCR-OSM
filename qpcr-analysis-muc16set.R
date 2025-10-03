@@ -169,33 +169,65 @@ ggplot(qpcr_ddCt_norm, aes(sample = RelExp_ctrl)) +
   facet_wrap(~Target, scales = "free") +
   theme_minimal()
 
+# Output file path
+output_file <- "muc16-set-stats.txt"
+
+# Start redirecting output
+sink(output_file)
+
 #Shapiro Wilk Test for normality
 by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
 #shapiro.test(ratio$Ratio_Bax_Bcl2)
 
+#loop for levene's and anova
 #Check homogeneity of variances(homoscedacity)
 #groups should have roughly equal variances
 
-#first filter per gene
-library(car)
-bmpr2 <- as.data.frame(subset(qpcr_ddCt_norm, Target == "Bmpr2"))
-muc16 <-as.data.frame(subset(qpcr_ddCt_norm, Target == "Muc16"))
+genes <- c("Muc16", "Bmpr2")
 
-leveneTest(RelExp_ctrl ~ Condition,  data = bmpr2)
-leveneTest(RelExp_ctrl ~ Condition, data = muc16)
+for (gene in genes) {
+  
+  cat("\n===== Gene:", gene, "=====\n")
+  
+  # Subset the gene
+  gene_data <- subset(qpcr_ddCt_norm, Target == gene)
+  
+  # Levene's test
+  print("Levene's Test:")
+  print(leveneTest(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # ANOVA
+  anova_result <- aov(RelExp_ctrl ~ Condition, data = gene_data)
+  print("ANOVA Summary:")
+  print(summary(anova_result))
+  
+  # Tukey post-hoc
+  print("Tukey HSD:")
+  print(TukeyHSD(anova_result))
+  #nonparametric 
+  print("Kruskal Wallis:")
+  print(kruskal.test(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # Post-hoc pairwise Wilcoxon (Holm correction)
+  cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
+  print(pairwise.wilcox.test(
+    gene_data$RelExp_ctrl, 
+    gene_data$Condition, 
+    p.adjust.method = "holm"
+  ))
+  
+}
 
-#Anova
-anova_result <- aov(RelExp_ctrl ~ Condition, data = bmpr2)
-summary(anova_result)
-TukeyHSD(anova_result)
+# Stop redirecting output
+sink()
 
-#Anova
-anova_result <- aov(RelExp_ctrl ~ Condition, data = muc16)
-summary(anova_result)
-TukeyHSD(anova_result)
 
 #nonparametric 
-kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+#kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+
+
+
+
 
 
 

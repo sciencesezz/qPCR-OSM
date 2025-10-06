@@ -141,3 +141,57 @@ print(box)
 ggsave(filename = "cell-proliferation-ccsm-box.png", plot = box, width = 8, height = 8, dpi = 800)
 
 
+#statistical analysis
+#Check normality assumptions
+#histogram - I think not as good for relatively small n
+library(car)
+#q-q
+ggplot(data, aes(sample = RelExp)) +
+  stat_qq() + stat_qq_line() +
+  #facet_wrap(~Target, scales = "free") +
+  theme_minimal()
+
+
+# Output file path
+output_file <- "cellproliferation-CCSM-stats.txt"
+
+# Start redirecting output
+sink(output_file)
+
+#Shapiro Wilk Test for normality
+shapiro.test(data$RelExp)
+
+#loop for levene's and anova
+#Check homogeneity of variances(homoscedacity)
+#groups should have roughly equal variances
+
+# Levene's test
+print("Levene's Test:")
+print(leveneTest(RelExp ~ Condition, data = data))
+  
+# ANOVA
+anova_result <- aov(RelExp ~ Condition, data = data)
+print("ANOVA Summary:")
+print(summary(anova_result))
+  
+# Tukey post-hoc
+print("Tukey HSD:")
+print(TukeyHSD(anova_result))
+#nonparametric 
+print("Kruskal Wallis:")
+print(kruskal.test(RelExp ~ Condition, data = data))
+  
+# Post-hoc pairwise Wilcoxon (Holm correction)
+cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
+print(pairwise.wilcox.test(
+data$RelExp, 
+data$Condition, 
+p.adjust.method = "holm"
+  ))
+
+# Stop redirecting output
+sink()
+  
+
+
+

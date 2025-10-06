@@ -182,6 +182,8 @@ write.csv(qpcr_ddCt_norm, "bax-set-norm.csv", row.names = FALSE)
 #statistical analysis
 #Check normality assumptions
 #histogram - I think not as good for relatively small n
+library(car)
+
 ggplot(qpcr_ddCt_norm, aes(x = RelExp_ctrl, fill = Target)) +
   geom_histogram(color = "black", bins = 10, alpha = 0.6) +
   facet_wrap(~Target, scales = "free") +
@@ -198,32 +200,73 @@ ggplot(ratio, aes(sample = Ratio_Bax_Bcl2)) +
   #facet_wrap(~Target, scales = "free") +
   theme_minimal()
 
+
+# Output file path
+output_file <- "apop-set-stats.txt"
+
+# Start redirecting output
+sink(output_file)
+
 #Shapiro Wilk Test for normality
 by(qpcr_ddCt_norm$RelExp_ctrl, qpcr_ddCt_norm$Target, shapiro.test)
-shapiro.test(ratio$Ratio_Bax_Bcl2)
+#shapiro.test(ratio$Ratio_Bax_Bcl2)
 
+#loop for levene's and anova
 #Check homogeneity of variances(homoscedacity)
 #groups should have roughly equal variances
 
-#first filter per gene
-library(car)
-bax <- as.data.frame(subset(qpcr_ddCt_norm, Target == "Bax"))
-bcl2 <-as.data.frame(subset(qpcr_ddCt_norm, Target == "Bcl2"))
+genes <- c("Bax", "Bcl2")
 
-leveneTest(RelExp_ctrl ~ Condition,  data = bax)
-leveneTest(RelExp_ctrl ~ Condition, data = bcl2)
+for (gene in genes) {
+  
+  cat("\n===== Gene:", gene, "=====\n")
+  
+  # Subset the gene
+  gene_data <- subset(qpcr_ddCt_norm, Target == gene)
+  
+  # Levene's test
+  print("Levene's Test:")
+  print(leveneTest(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # ANOVA
+  anova_result <- aov(RelExp_ctrl ~ Condition, data = gene_data)
+  print("ANOVA Summary:")
+  print(summary(anova_result))
+  
+  # Tukey post-hoc
+  print("Tukey HSD:")
+  print(TukeyHSD(anova_result))
+  #nonparametric 
+  print("Kruskal Wallis:")
+  print(kruskal.test(RelExp_ctrl ~ Condition, data = gene_data))
+  
+  # Post-hoc pairwise Wilcoxon (Holm correction)
+  cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
+  print(pairwise.wilcox.test(
+    gene_data$RelExp_ctrl, 
+    gene_data$Condition, 
+    p.adjust.method = "holm"
+  ))
+  
+}
+
+
+#one meteic
+shapiro.test(ratio$Ratio_Bax_Bcl2)
 leveneTest(Ratio_Bax_Bcl2 ~ Condition, data = ratio)
-
-#Anova
-anova_result <- aov(RelExp_ctrl ~ Condition, data = bcl2)
-summary(anova_result)
-TukeyHSD(anova_result)
-
 anova_result <- aov(Ratio_Bax_Bcl2 ~ Condition, data = ratio)
 summary(anova_result)
 TukeyHSD(anova_result)
 
 #nonparametric 
-kruskal.test(RelExp_ctrl ~ Condition, data = bax)
+print(kruskal.test(Ratio_Bax_Bcl2 ~ Condition, data = ratio))
+
+print(pairwise.wilcox.test(
+  ratio$Ratio_Bax_Bcl2, 
+  ratio$Condition, 
+  p.adjust.method = "holm"
+))
 
 
+# Stop redirecting output
+sink()

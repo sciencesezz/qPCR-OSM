@@ -83,13 +83,13 @@ ggplot(data, aes(sample = RelExp)) +
 
 
 # Output file path
-output_file <- "inhibitors-stats.txt"
+output_file <- "inhibitors-stats-logtrans.txt"
 
 # Start redirecting output
 sink(output_file)
 
 #Shapiro Wilk Test for normality
-by(data$RelExp, data$Experiment, shapiro.test)
+by(data$logRelExp, data$Experiment, shapiro.test)
 
 #exps defined above
 for (exp in exps) {
@@ -101,10 +101,10 @@ for (exp in exps) {
   
   # Levene's test
   print("Levene's Test:")
-  print(leveneTest(RelExp ~ Condition, data = inhib_data))
+  print(leveneTest(logRelExp ~ Condition, data = inhib_data))
   
   # ANOVA
-  anova_result <- aov(RelExp ~ Condition, data = inhib_data)
+  anova_result <- aov(logRelExp ~ Condition, data = inhib_data)
   print("ANOVA Summary:")
   print(summary(anova_result))
   
@@ -113,12 +113,12 @@ for (exp in exps) {
   print(TukeyHSD(anova_result))
   #nonparametric 
   print("Kruskal Wallis:")
-  print(kruskal.test(RelExp ~ Condition, data = inhib_data))
+  print(kruskal.test(logRelExp ~ Condition, data = inhib_data))
   
   # Post-hoc pairwise Wilcoxon (Holm correction)
   cat("\nPost-hoc Pairwise Wilcoxon (Holm):\n")
   print(pairwise.wilcox.test(
-    inhib_data$RelExp, 
+    inhib_data$logRelExp, 
     inhib_data$Condition, 
     p.adjust.method = "BH"
   ))

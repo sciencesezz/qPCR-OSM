@@ -44,7 +44,7 @@ for (exp in exps) {
     geom_jitter(data = data_exp, aes(x = Condition, y = RelExp),width = 0.15, size = 1, color = "black") +
     geom_hline(yintercept = 1, linetype = "dashed") +  # baseline = 1
     # facet_wrap(~ Target, scales = "free_y") +          # one panel per gene
-    scale_fill_brewer(palette = "PuRd") +
+    scale_fill_brewer(palette = "PuBu") +
     theme_light(base_size = 25) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           legend.position = "none") +
@@ -58,7 +58,7 @@ for (exp in exps) {
     geom_boxplot(alpha = 1, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2, color = "black") +
     #geom_hline(yintercept = 1, linetype = "dashed") +
-    scale_fill_brewer(palette = "PuRd") +
+    scale_fill_brewer(palette = "PuBu") +
     theme_bw(base_size = 25) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           #axis.ticks.x = element_blank(),

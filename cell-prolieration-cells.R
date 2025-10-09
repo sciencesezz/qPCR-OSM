@@ -29,12 +29,10 @@ summary <- data %>%
     .groups = "drop"
   )
 
-
 colours <- c(
-  "Control" = "grey50",  
-  "COCSM"   = "mediumpurple")  
+  "Control" = "#A09E9F",  
+  "COCSM"   = "#FFC107")  
 
-  
 # Plot
 bars <- ggplot() +
   # Mean bars
@@ -66,10 +64,10 @@ box <- ggplot(data = data, aes(x = Condition, y = RelExp, fill = Condition)) +
   theme_bw(base_size = 25) +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank(),
-        legend.position = "none") +
+        legend.position = "right") +
   labs(y = "Fold Change", x = "Sample Group")
 print(box)
-ggsave(filename = "cell-proliferation2-box-xleg.png", plot = box, width = 6, height = 4, dpi = 800)
+ggsave(filename = "cell-proliferation2-box-leg.png", plot = box, width = 6, height = 4, dpi = 800)
 
 #loop over each cell line so that I have individual graphs:
 # Get all unique genes

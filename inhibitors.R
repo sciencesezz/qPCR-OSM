@@ -108,10 +108,20 @@ for (exp in exps) {
   print("ANOVA Summary:")
   print(summary(anova_result))
   
-  # Tukey post-hoc
-  print("Tukey HSD:")
-  print(TukeyHSD(anova_result))
-  #nonparametric 
+  # Extract p-value from the ANOVA table
+  p_val <- summary(anova_result)[[1]][["Pr(>F)"]][1]
+  
+  if (p_val < 0.05) {
+    print("P < 0.05 → Running Tukey HSD post-hoc test...")
+    
+    tukey_result <- TukeyHSD(anova_result, "Condition")
+    print(tukey_result)
+    
+  } else {
+    print("P ≥ 0.05 - omit post-hoc test")
+  }
+ 
+   #nonparametric 
   print("Kruskal Wallis:")
   print(kruskal.test(logRelExp ~ Condition, data = inhib_data))
   
